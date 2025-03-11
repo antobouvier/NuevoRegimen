@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from Modules.style import RoundedWindow
-from Modules.resources import ICON_PATH  # Asegura que este archivo existe y la ruta es correcta
+from Modules.resources import ICON_PATH  
 
 class MainWindow(RoundedWindow):
     def __init__(self):
@@ -19,7 +19,7 @@ class MainWindow(RoundedWindow):
         # Verificar que la ruta del ícono existe
         if os.path.exists(ICON_PATH):
             print(f"Ícono encontrado en: {ICON_PATH}")
-            self.setWindowIcon(QIcon(ICON_PATH))  # Establece el ícono de la ventana
+            self.setWindowIcon(QIcon(ICON_PATH))  
         else:
             print("⚠️ Ícono no encontrado. Verifica la ruta.")
 
@@ -65,6 +65,14 @@ class MainWindow(RoundedWindow):
 
         self.setLayout(layout)
 
+    def mostrar_mensaje(self, titulo, mensaje, icon=QMessageBox.Information):
+        """Muestra un mensaje emergente"""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(titulo)
+        msg_box.setText(mensaje)
+        msg_box.setIcon(icon)
+        msg_box.exec()
+
     def buscar_persona(self):
         """Ejecuta el procedimiento almacenado y muestra los datos de la persona y su régimen actual."""
         cuil = self.cuil_input.text().strip()
@@ -78,7 +86,7 @@ class MainWindow(RoundedWindow):
             cursor = conn.cursor()
 
             # Obtener datos personales
-            cursor.execute("EXEC Anto_ObtenerPersonaPorCUIL @CUIL = ?", (cuil,))
+            cursor.execute("EXEC Gestion.dbo.Anto_ObtenerPersonaPorCUIL @CUIL = ?", (cuil,))
             resultado_persona = cursor.fetchone()
 
             if resultado_persona:
@@ -92,7 +100,7 @@ class MainWindow(RoundedWindow):
                 self.label_fec_nac.setText("Fecha de Nacimiento: No encontrado")
 
             # Obtener régimen actual
-            cursor.execute("EXEC anto_regimenactual @CUIL = ?", (cuil,))
+            cursor.execute("EXEC Gestion.dbo.anto_regimenactual @CUIL = ?", (cuil,))
             resultado_regimen = cursor.fetchone()
 
             if resultado_regimen:
@@ -121,7 +129,7 @@ class MainWindow(RoundedWindow):
             cursor = conn.cursor()
 
             cursor.execute("""
-                EXEC Anto_CambiarRegimen @CUIL = ?, @NuevoRegimen = ?
+                EXEC Gestion.dbo.Anto_CambiarRegimen @CUIL = ?, @NuevoRegimen = ?
             """, (cuil, nuevo_regimen))
 
             conn.commit()
@@ -142,8 +150,8 @@ def obtener_conexion():
         'SQL Server Native Client 10.0',  
         'SQL Server',  
     ]
-    server = 'PC-2193'
-    database = 'Aportes'
+    server = 'SQL01'
+    database = 'Gestion'
 
     for driver in drivers:
         conexion_str = (

@@ -10,8 +10,8 @@ drivers = [
 
 def obtener_conexion():
     # Configura la conexión a la base de datos SQL Server.
-    server = 'PC-2193'
-    database = 'Aportes'
+    server = 'SQL01'
+    database = 'Gestion'
 
     for driver in drivers:
         conexion_str = (
