@@ -21,7 +21,7 @@ Este proyecto es una aplicación de escritorio desarrollada en **Python** con **
 
 ### 1️⃣ **Clonar el repositorio**
 ```sh
-git clone https://github.com/tu_usuario/NuevoRegimen.git
+git clone https://github.com/antobouvier/NuevoRegimen.git
 cd NuevoRegimen
 ```
 
