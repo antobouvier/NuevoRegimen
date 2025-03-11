@@ -1,17 +1,17 @@
 import sys
+import pyodbc
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy
+    QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox
 )
 from PyQt5.QtCore import Qt
 from Modules.style import RoundedWindow
-import pyodbc
 
 class MainWindow(RoundedWindow):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Gestión de Régimen")
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(100, 100, 400, 320)
 
         layout = QVBoxLayout()
 
@@ -23,11 +23,23 @@ class MainWindow(RoundedWindow):
         self.cuil_input.setPlaceholderText("CUIL (11 dígitos)")
         layout.addWidget(self.cuil_input)
 
-        # Espaciador para organizar los elementos
-        layout.addItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        # Botón para buscar
+        self.buscar_button = QPushButton("Buscar")
+        self.buscar_button.clicked.connect(self.buscar_persona)
+        layout.addWidget(self.buscar_button)
 
-        # ComboBox para Régimen
-        self.label_regimen = QLabel("Seleccione Régimen:")
+        # Etiquetas para mostrar los datos obtenidos
+        self.label_nombre = QLabel("Nombre:")
+        layout.addWidget(self.label_nombre)
+
+        self.label_fec_nac = QLabel("Fecha de Nacimiento:")
+        layout.addWidget(self.label_fec_nac)
+
+        self.label_regimen_actual = QLabel("Régimen Actual:")
+        layout.addWidget(self.label_regimen_actual)
+
+        # ComboBox para seleccionar el nuevo régimen
+        self.label_regimen = QLabel("Seleccione Nuevo Régimen:")
         layout.addWidget(self.label_regimen)
 
         self.regimen_combo = QComboBox()
@@ -36,40 +48,79 @@ class MainWindow(RoundedWindow):
         self.regimen_combo.addItem("Régimen Policial", 3)
         layout.addWidget(self.regimen_combo)
 
-        # Espaciador adicional
-        layout.addItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
-
         # Botón para guardar
         self.save_button = QPushButton("Guardar")
-        self.save_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ajusta tamaño
         self.save_button.clicked.connect(self.guardar_regimen)
         layout.addWidget(self.save_button)
 
         self.setLayout(layout)
 
     def mostrar_mensaje(self, titulo, mensaje, icon=QMessageBox.Information):
+        """Muestra un mensaje emergente"""
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle(titulo)
         msg_box.setText(mensaje)
         msg_box.setIcon(icon)
         msg_box.exec()
 
-    def guardar_regimen(self):
+    def buscar_persona(self):
+        """Ejecuta el procedimiento almacenado y muestra los datos de la persona y su régimen actual."""
         cuil = self.cuil_input.text().strip()
-        nuevo_regimen = self.regimen_combo.currentData()
 
-        # Validaciones básicas
+        # Validación del CUIL
         if len(cuil) != 11 or not cuil.isdigit():
             self.mostrar_mensaje("Error", "El CUIL debe tener exactamente 11 dígitos numéricos.", QMessageBox.Warning)
             return
 
         try:
-            # Ejecutar procedimiento almacenado
+            conn = obtener_conexion()
+            cursor = conn.cursor()
+
+            # Obtener datos personales
+            cursor.execute("EXEC Anto_ObtenerPersonaPorCUIL @CUIL = ?", (cuil,))
+            resultado_persona = cursor.fetchone()
+
+            if resultado_persona:
+                nombre = resultado_persona.Apeynom
+                fecha_nac = resultado_persona.Fec_nac.strftime("%d/%m/%Y") if resultado_persona.Fec_nac else "No disponible"
+
+                self.label_nombre.setText(f"Nombre: {nombre}")
+                self.label_fec_nac.setText(f"Fecha de Nacimiento: {fecha_nac}")
+            else:
+                self.label_nombre.setText("Nombre: No encontrado")
+                self.label_fec_nac.setText("Fecha de Nacimiento: No encontrado")
+
+            # Obtener régimen actual
+            cursor.execute("EXEC anto_regimenactual @CUIL = ?", (cuil,))
+            resultado_regimen = cursor.fetchone()
+
+            if resultado_regimen:
+                regimen_actual = resultado_regimen.REGIMEN
+                self.label_regimen_actual.setText(f"Régimen Actual: {regimen_actual}")
+            else:
+                self.label_regimen_actual.setText("Régimen Actual: No encontrado")
+
+        except pyodbc.Error as e:
+            print("Error al ejecutar la consulta:", e)
+            self.mostrar_mensaje("Error", "No se pudo obtener los datos.", QMessageBox.Critical)
+        finally:
+            conn.close()
+
+    def guardar_regimen(self):
+        """Ejecuta el procedimiento almacenado para actualizar el régimen de la persona."""
+        cuil = self.cuil_input.text().strip()
+        nuevo_regimen = self.regimen_combo.currentData()
+
+        if len(cuil) != 11 or not cuil.isdigit():
+            self.mostrar_mensaje("Error", "El CUIL debe tener exactamente 11 dígitos numéricos.", QMessageBox.Warning)
+            return
+
+        try:
             conn = obtener_conexion()
             cursor = conn.cursor()
 
             cursor.execute("""
-                EXEC nuevo_regimen @CUIL = ?, @NuevoRegimen = ?
+                EXEC Anto_CambiarRegimen @CUIL = ?, @NuevoRegimen = ?
             """, (cuil, nuevo_regimen))
 
             conn.commit()
@@ -83,6 +134,7 @@ class MainWindow(RoundedWindow):
 
 # Conexión a la base de datos
 def obtener_conexion():
+    """Intenta conectarse a la base de datos usando diferentes drivers."""
     drivers = [
         'ODBC Driver 17 for SQL Server',  
         'SQL Server Native Client 11.0',  
@@ -100,15 +152,12 @@ def obtener_conexion():
             "Trusted_Connection=yes;"
         )
         try:
-            print(f"Intentando conectar con el driver: {driver}")
             conexion = pyodbc.connect(conexion_str)
-            print(f"Conexión exitosa con el driver: {driver}")
             return conexion
-        except pyodbc.Error as error:
-            print(f"Error al intentar conectar con el driver: {driver}")
-            print(error)
-    
-    raise Exception("No se pudo conectar a la base de datos con ninguno de los drivers disponibles.")
+        except pyodbc.Error:
+            continue
+
+    raise Exception("No se pudo conectar a la base de datos.")
 
 # Configuración y ejecución de la aplicación
 if __name__ == "__main__":
