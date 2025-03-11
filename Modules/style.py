@@ -1,17 +1,33 @@
-#anto_modulos/style.py
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QApplication
+#Modules.py modulo de estilo principal
+
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QMessageBox
 
 class RoundedWindow(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint)  # Elimina el marco del sistema operativo
+        self.setWindowFlags(Qt.Window)  # Habilita botones de minimizar, maximizar y cerrar
         self.setStyleSheet(STYLE)  # Aplica el estilo CSS
+        self.dragging = False  # Para manejar el arrastre de la ventana
+        self.offset = QPoint()  # Para guardar la posición inicial del mouse
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragging = True
+            self.offset = event.globalPos() - self.pos()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            self.move(event.globalPos() - self.offset)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self.dragging = False
+        event.accept()
 
 
-
-
-from PyQt5.QtWidgets import QMessageBox
 
 STYLE = """
     QWidget {

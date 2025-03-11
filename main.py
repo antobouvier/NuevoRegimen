@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox
+    QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 from Modules.style import RoundedWindow
@@ -23,6 +23,9 @@ class MainWindow(RoundedWindow):
         self.cuil_input.setPlaceholderText("CUIL (11 dígitos)")
         layout.addWidget(self.cuil_input)
 
+        # Espaciador para organizar los elementos
+        layout.addItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
         # ComboBox para Régimen
         self.label_regimen = QLabel("Seleccione Régimen:")
         layout.addWidget(self.label_regimen)
@@ -33,8 +36,12 @@ class MainWindow(RoundedWindow):
         self.regimen_combo.addItem("Régimen Policial", 3)
         layout.addWidget(self.regimen_combo)
 
+        # Espaciador adicional
+        layout.addItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
         # Botón para guardar
         self.save_button = QPushButton("Guardar")
+        self.save_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ajusta tamaño
         self.save_button.clicked.connect(self.guardar_regimen)
         layout.addWidget(self.save_button)
 
@@ -77,10 +84,10 @@ class MainWindow(RoundedWindow):
 # Conexión a la base de datos
 def obtener_conexion():
     drivers = [
-        'ODBC Driver 17 for SQL Server',  # Preferido y más reciente
-        'SQL Server Native Client 11.0',  # Native Client version 11
-        'SQL Server Native Client 10.0',  # Native Client version 10
-        'SQL Server',  # Generic ODBC driver name (legacy)
+        'ODBC Driver 17 for SQL Server',  
+        'SQL Server Native Client 11.0',  
+        'SQL Server Native Client 10.0',  
+        'SQL Server',  
     ]
     server = 'PC-2193'
     database = 'Aportes'
