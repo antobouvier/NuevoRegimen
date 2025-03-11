@@ -1,10 +1,13 @@
 import sys
 import pyodbc
+import os
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox
 )
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from Modules.style import RoundedWindow
+from Modules.resources import ICON_PATH  # Asegura que este archivo existe y la ruta es correcta
 
 class MainWindow(RoundedWindow):
     def __init__(self):
@@ -12,6 +15,13 @@ class MainWindow(RoundedWindow):
 
         self.setWindowTitle("Gestión de Régimen")
         self.setGeometry(100, 100, 400, 320)
+
+        # Verificar que la ruta del ícono existe
+        if os.path.exists(ICON_PATH):
+            print(f"Ícono encontrado en: {ICON_PATH}")
+            self.setWindowIcon(QIcon(ICON_PATH))  # Establece el ícono de la ventana
+        else:
+            print("⚠️ Ícono no encontrado. Verifica la ruta.")
 
         layout = QVBoxLayout()
 
@@ -55,19 +65,10 @@ class MainWindow(RoundedWindow):
 
         self.setLayout(layout)
 
-    def mostrar_mensaje(self, titulo, mensaje, icon=QMessageBox.Information):
-        """Muestra un mensaje emergente"""
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(titulo)
-        msg_box.setText(mensaje)
-        msg_box.setIcon(icon)
-        msg_box.exec()
-
     def buscar_persona(self):
         """Ejecuta el procedimiento almacenado y muestra los datos de la persona y su régimen actual."""
         cuil = self.cuil_input.text().strip()
 
-        # Validación del CUIL
         if len(cuil) != 11 or not cuil.isdigit():
             self.mostrar_mensaje("Error", "El CUIL debe tener exactamente 11 dígitos numéricos.", QMessageBox.Warning)
             return
@@ -159,7 +160,6 @@ def obtener_conexion():
 
     raise Exception("No se pudo conectar a la base de datos.")
 
-# Configuración y ejecución de la aplicación
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
